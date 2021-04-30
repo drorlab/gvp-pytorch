@@ -31,18 +31,18 @@ def tuple_index(x, idx):
     '''
     return x[0][idx], x[1][idx]
 
-def randn(batch, dims, device="cpu"):
+def randn(n, dims, device="cpu"):
     '''
     Returns random tuples (s, V) drawn elementwise from a normal distribution.
     
-    :param batch: number of data points
+    :param n: number of data points
     :param dims: tuple of dimensions (n_scalar, n_vector)
     
-    :return: (s, V) with s.shape = (batch, n_scalar) and
-             V.shape = (batch, n_vector, 3)
+    :return: (s, V) with s.shape = (n, n_scalar) and
+             V.shape = (n, n_vector, 3)
     '''
-    return torch.randn(batch, dims[0], device=device), \
-            torch.randn(batch, dims[1], 3, device=device)
+    return torch.randn(n, dims[0], device=device), \
+            torch.randn(n, dims[1], 3, device=device)
 
 def _norm_no_nan(x, axis=-1, keepdims=False, eps=1e-8, sqrt=True):
     '''
@@ -78,8 +78,8 @@ def _merge(s, v):
 
 class GVP(nn.Module):
     '''
-    Geometric Vector Perceptron. See manuscript (Jing et al., 2021)
-    for more details on the constructor arguments.
+    Geometric Vector Perceptron. See manuscript and README.md
+    for more details.
     
     :param in_dims: tuple (n_scalar, n_vector)
     :param out_dims: tuple (n_scalar, n_vector)
@@ -105,7 +105,10 @@ class GVP(nn.Module):
         
     def forward(self, x):
         '''
-        :param x: tuple (s, V) of `torch.Tensor`
+        :param x: tuple (s, V) of `torch.Tensor`, 
+                  or (if vectors_in is 0), a single `torch.Tensor`
+        :return: tuple (s, V) of `torch.Tensor`,
+                 or (if vectors_out is 0), a single `torch.Tensor`
         '''
         if self.vi:
             s, v = x
