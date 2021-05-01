@@ -50,7 +50,7 @@ gvp_ = gvp.GVP(in_dims, out_dims)
 ```
 The classes `gvp.Dropout` and `gvp.LayerNorm` implement vector-channel dropout and layer norm, while using normal dropout and layer norm for scalar channels. Both expect inputs and return outputs of form `(s, V)`, but will also behave like their scalar-valued counterparts if passed a single tensor.
 ```
-dropout = Dropout(drop_rate=0.1)
+dropout = gvp.Dropout(drop_rate=0.1)
 layernorm = gvp.LayerNorm(out_dims)
 ```
 The function `gvp.randn` returns tuples `(s, V)` drawn from a standard normal. Such tuples can be directly used in a forward pass.
