@@ -6,6 +6,10 @@ This repository serves two purposes. If you would like to use the GVP architectu
 
 **Note:** This repository is an implementation in PyTorch Geometric emphasizing usability and flexibility. The original code for the paper, in TensorFlow, can be found [here](https://github.com/drorlab/gvp). We acknowledge Pratham Soni for portions of the implementation in PyTorch.
 
+<p align="center"><img src="schematic.png" width="500"></p>
+
+<p align="center"><img src="vectors.png" width="500"></p>
+
 ## Requirements
 * UNIX environment
 * python==3.6.13
