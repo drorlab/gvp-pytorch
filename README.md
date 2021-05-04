@@ -4,7 +4,7 @@ Implementation of equivariant GVP-GNNs as described in [Learning from Protein St
 
 This repository serves two purposes. If you would like to use the GVP architecture for structural biology tasks, we provide building blocks for models and data pipelines. If you are specifically interested in protein design as described in the paper, we provide scripts for training and testing models.
 
-**Note:** This repository is an implementation in PyTorch Geometric emphasizing usability and flexibility. The original code for the paper, in TensorFlow, can be found [here](https://github.com/drorlab/gvp). We acknowledge Pratham Soni for portions of the implementation in PyTorch.
+**Note:** This repository is an implementation in PyTorch Geometric emphasizing usability and flexibility. The original code for the paper, in TensorFlow, can be found [here](https://github.com/drorlab/gvp). We thank Pratham Soni for his contributions to the implementation in PyTorch.
 
 <p align="center"><img src="schematic.png" width="500"></p>
 
@@ -34,13 +34,13 @@ The core modules in `gvp` are meant to be as general as possible, but you will l
 
 **Installation:** Download this repository and run `python setup.py develop` or `pip install . -e`. Be sure to manually install `torch_geometric` first!
 
-**Tuple representation:** All inputs and outputs with both scalar and vector channels are represented as a tuple of two tensors `(s, V)`, where the shape of `V` is `[..., n_vector, 3]`. All dimensions should therefore be specified as tuples `(n_scalar, n_vector)`.
+**Tuple representation:** All inputs and outputs with both scalar and vector channels are represented as a tuple of two tensors `(s, V)`. Similarly, all dimensions should be specified as tuples `(n_scalar, n_vector)` where `n_scalar` and `n_vector` are the number of scalar and vector features, respectively. All `V` tensors must be shaped as `[..., n_vector, 3]`, not `[..., 3, n_vector]`.
 
 **Batching:** We adopt the `torch_geometric` convention of absorbing the batch dimension into the node dimension and keeping track of batch index in a separate tensor.
 
-**Amino acids:** Models view sequences as int tensors and are agnostic to aa-to-int mappings. Such mappings are specified as the `letter_to_num` attribute of `gvp.data.ProteinGraphDataset`. Currently, only the 20 amino acids are supported.
+**Amino acids:** Models view sequences as int tensors and are agnostic to aa-to-int mappings. Such mappings are specified as the `letter_to_num` attribute of `gvp.data.ProteinGraphDataset`. Currently, only the 20 standard amino acids are supported.
 
-For all classes, see the docstrings for more detailed usage. If you have any questions, please contact bjing@stanford.edu.
+For all classes, see the docstrings for more detailed usage. If you have any questions, please contact bjing@cs.stanford.edu.
 
 ### Core GVP classes
 
@@ -54,7 +54,7 @@ gvp_ = gvp.GVP(in_dims, out_dims)
 ```
 The classes `gvp.Dropout` and `gvp.LayerNorm` implement vector-channel dropout and layer norm, while using normal dropout and layer norm for scalar channels. Both expect inputs and return outputs of form `(s, V)`, but will also behave like their scalar-valued counterparts if passed a single tensor.
 ```
-dropout = Dropout(drop_rate=0.1)
+dropout = gvp.Dropout(drop_rate=0.1)
 layernorm = gvp.LayerNorm(out_dims)
 ```
 The function `gvp.randn` returns tuples `(s, V)` drawn from a standard normal. Such tuples can be directly used in a forward pass.
@@ -162,7 +162,7 @@ out = cpd_model(nodes, batch.edge_index,
 ```
 
 ## Protein design
-We provide a script `run_cpd.py` to train, validate, and test a `CPDModel` as specified in the paper using the CATH 4.2 dataset and TS50 dataset. If you want to use a trained model on new structures, see the section "Sampling" below. Note that due to adapting to PyTorch Geometric, the model is slightly different from the original TensorFlow model and the performance slightly poorer.
+We provide a script `run_cpd.py` to train, validate, and test a `CPDModel` as specified in the paper using the CATH 4.2 dataset and TS50 dataset. If you want to use a trained model on new structures, see the section "Sampling" below.
 
 ### Fetching data
 Run `getCATH.sh` in `data/` to fetch the CATH 4.2 dataset. If you are interested in testing on the TS 50 test set, also run `grep -Fv -f ts50remove.txt chain_set.jsonl > chain_set_ts50.jsonl` to produce a training set without overlap with the TS 50 test set. 
