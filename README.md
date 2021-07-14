@@ -4,11 +4,11 @@ Implementation of equivariant GVP-GNNs as described in [Learning from Protein St
 
 **UPDATE:** Also includes equivariant GNNs with vector gating as described in [Equivariant Graph Neural Networks for 3D Macromolecular Structure](https://arxiv.org/abs/2106.03843) by B Jing, S Eismann, P Soni, and RO Dror.
 
-Scripts for training/testing/sampling on protein design and training/testing on all [ATOM3D](https://arxiv.org/abs/2012.04035) tasks are provided.
+Scripts for training / testing / sampling on protein design and training / testing on all [ATOM3D](https://arxiv.org/abs/2012.04035) tasks are provided.
 
 **Note:** This implementation is in PyTorch Geometric. The original TensorFlow code, which is not maintained, can be found [here](https://github.com/drorlab/gvp).
 
-<p align="center"><img src="schematic.png" width="500"></p>
+<p align="center"><img src="schematic.png" width="400"></p>
 
 <p align="center"><img src="vectors.png" width="500"></p>
 
