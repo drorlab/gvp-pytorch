@@ -25,10 +25,24 @@ class EquivarianceTest(unittest.TestCase):
         model = gvp.GVP(node_dim, node_dim).to(device).eval()
         model_fn = lambda h_V, h_E: model(h_V)
         test_equivariance(model_fn, nodes, edges)
+        
+    def test_gvp_vector_gate(self):
+        model = gvp.GVP(node_dim, node_dim, vector_gate=True).to(device).eval()
+        model_fn = lambda h_V, h_E: model(h_V)
+        test_equivariance(model_fn, nodes, edges)
 
     def test_gvp_sequence(self):
         model = nn.Sequential(
             gvp.GVP(node_dim, node_dim),
+            gvp.Dropout(0.1),
+            gvp.LayerNorm(node_dim)
+        ).to(device).eval()
+        model_fn = lambda h_V, h_E: model(h_V)
+        test_equivariance(model_fn, nodes, edges)
+        
+    def test_gvp_sequence_vector_gate(self):
+        model = nn.Sequential(
+            gvp.GVP(node_dim, node_dim, vector_gate=True),
             gvp.Dropout(0.1),
             gvp.LayerNorm(node_dim)
         ).to(device).eval()
@@ -40,8 +54,19 @@ class EquivarianceTest(unittest.TestCase):
         model_fn = lambda h_V, h_E: model(h_V, edge_index, h_E)
         test_equivariance(model_fn, nodes, edges)
         
+    def test_gvp_conv_vector_gate(self):
+        model = gvp.GVPConv(node_dim, node_dim, edge_dim, vector_gate=True).to(device).eval()
+        model_fn = lambda h_V, h_E: model(h_V, edge_index, h_E)
+        test_equivariance(model_fn, nodes, edges)
+        
     def test_gvp_conv_layer(self):
         model = gvp.GVPConvLayer(node_dim, edge_dim).to(device).eval()
+        model_fn = lambda h_V, h_E: model(h_V, edge_index, h_E,
+                                          autoregressive_x=h_V)
+        test_equivariance(model_fn, nodes, edges)
+        
+    def test_gvp_conv_layer_vector_gate(self):
+        model = gvp.GVPConvLayer(node_dim, edge_dim, vector_gate=True).to(device).eval()
         model_fn = lambda h_V, h_E: model(h_V, edge_index, h_E,
                                           autoregressive_x=h_V)
         test_equivariance(model_fn, nodes, edges)

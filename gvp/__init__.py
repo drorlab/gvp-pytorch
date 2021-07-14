@@ -1,4 +1,4 @@
-import torch
+import torch, functools
 from torch import nn
 import torch.nn.functional as F
 from torch_geometric.nn import MessagePassing
@@ -85,18 +85,22 @@ class GVP(nn.Module):
     :param out_dims: tuple (n_scalar, n_vector)
     :param h_dim: intermediate number of vector channels, optional
     :param activations: tuple of functions (scalar_act, vector_act)
+    :param vector_gate: whether to use vector gating.
+                        (vector_act will be used as sigma^+ in vector gating if `True`)
     '''
     def __init__(self, in_dims, out_dims, h_dim=None,
-                 activations=(F.relu, torch.sigmoid)):
+                 activations=(F.relu, torch.sigmoid), vector_gate=False):
         super(GVP, self).__init__()
         self.si, self.vi = in_dims
         self.so, self.vo = out_dims
+        self.vector_gate = vector_gate
         if self.vi: 
             self.h_dim = h_dim or max(self.vi, self.vo) 
             self.wh = nn.Linear(self.vi, self.h_dim, bias=False)
             self.ws = nn.Linear(self.h_dim + self.si, self.so)
             if self.vo:
                 self.wv = nn.Linear(self.h_dim, self.vo, bias=False)
+                if self.vector_gate: self.wsv = nn.Linear(self.so, self.vo)
         else:
             self.ws = nn.Linear(self.si, self.so)
         
@@ -119,7 +123,13 @@ class GVP(nn.Module):
             if self.vo: 
                 v = self.wv(vh) 
                 v = torch.transpose(v, -1, -2)
-                if self.vector_act:
+                if self.vector_gate: 
+                    if self.vector_act:
+                        gate = self.wsv(self.vector_act(s))
+                    else:
+                        gate = self.wsv(s)
+                    v = v * torch.sigmoid(gate).unsqueeze(-1)
+                elif self.vector_act:
                     v = v * self.vector_act(
                         _norm_no_nan(v, axis=-1, keepdims=True))
         else:
@@ -214,28 +224,35 @@ class GVPConv(MessagePassing):
     :param n_layers: number of GVPs in the message function
     :param module_list: preconstructed message function, overrides n_layers
     :param aggr: should be "add" if some incoming edges are masked, as in
-                 a masked autoregressive decoder architecture
+                 a masked autoregressive decoder architecture, otherwise "mean"
+    :param activations: tuple of functions (scalar_act, vector_act) to use in GVPs
+    :param vector_gate: whether to use vector gating.
+                        (vector_act will be used as sigma^+ in vector gating if `True`)
     '''
     def __init__(self, in_dims, out_dims, edge_dims,
-                 n_layers=3, module_list=None, aggr="mean"):
+                 n_layers=3, module_list=None, aggr="mean", 
+                 activations=(F.relu, torch.sigmoid), vector_gate=False):
         super(GVPConv, self).__init__(aggr=aggr)
         self.si, self.vi = in_dims
         self.so, self.vo = out_dims
         self.se, self.ve = edge_dims
         
+        GVP_ = functools.partial(GVP, 
+                activations=activations, vector_gate=vector_gate)
+        
         module_list = module_list or []
         if not module_list:
             if n_layers == 1:
                 module_list.append(
-                    GVP((2*self.si + self.se, 2*self.vi + self.ve), 
+                    GVP_((2*self.si + self.se, 2*self.vi + self.ve), 
                         (self.so, self.vo), activations=(None, None)))
             else:
                 module_list.append(
-                    GVP((2*self.si + self.se, 2*self.vi + self.ve), out_dims)
+                    GVP_((2*self.si + self.se, 2*self.vi + self.ve), out_dims)
                 )
                 for i in range(n_layers - 2):
-                    module_list.append(GVP(out_dims, out_dims))
-                module_list.append(GVP(out_dims, out_dims,
+                    module_list.append(GVP_(out_dims, out_dims))
+                module_list.append(GVP_(out_dims, out_dims,
                                        activations=(None, None)))
         self.message_func = nn.Sequential(*module_list)
 
@@ -276,26 +293,33 @@ class GVPConvLayer(nn.Module):
     :param autoregressive: if `True`, this `GVPConvLayer` will be used
            with a different set of input node embeddings for messages
            where src >= dst
+    :param activations: tuple of functions (scalar_act, vector_act) to use in GVPs
+    :param vector_gate: whether to use vector gating.
+                        (vector_act will be used as sigma^+ in vector gating if `True`)
     '''
     def __init__(self, node_dims, edge_dims,
                  n_message=3, n_feedforward=2, drop_rate=.1,
-                 autoregressive=False):
+                 autoregressive=False, 
+                 activations=(F.relu, torch.sigmoid), vector_gate=False):
         
         super(GVPConvLayer, self).__init__()
         self.conv = GVPConv(node_dims, node_dims, edge_dims, n_message,
-                           aggr="add" if autoregressive else "mean")
+                           aggr="add" if autoregressive else "mean",
+                           activations=activations, vector_gate=vector_gate)
+        GVP_ = functools.partial(GVP, 
+                activations=activations, vector_gate=vector_gate)
         self.norm = nn.ModuleList([LayerNorm(node_dims) for _ in range(2)])
         self.dropout = nn.ModuleList([Dropout(drop_rate) for _ in range(2)])
 
         ff_func = []
         if n_feedforward == 1:
-            ff_func.append(GVP(node_dims, node_dims, activations=(None, None)))
+            ff_func.append(GVP_(node_dims, node_dims, activations=(None, None)))
         else:
             hid_dims = 4*node_dims[0], 2*node_dims[1]
-            ff_func.append(GVP(node_dims, hid_dims))
+            ff_func.append(GVP_(node_dims, hid_dims))
             for i in range(n_feedforward-2):
-                ff_func.append(GVP(hid_dims, hid_dims))
-            ff_func.append(GVP(hid_dims, node_dims, activations=(None, None)))
+                ff_func.append(GVP_(hid_dims, hid_dims))
+            ff_func.append(GVP_(hid_dims, node_dims, activations=(None, None)))
         self.ff_func = nn.Sequential(*ff_func)
 
     def forward(self, x, edge_index, edge_attr,

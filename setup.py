@@ -10,7 +10,7 @@ setup(
         'gvp.data',
         'gvp.models'
     ]),
-    version='0.1',
+    version='0.1.1',
     description='Geometric Vector Perceptron',
     license='MIT',
     long_description=long_description,
@@ -22,6 +22,7 @@ setup(
         'torch_cluster',
         'tqdm',
         'numpy',
-        'sklearn'
+        'sklearn',
+        'atom3d'
     ]
 )
