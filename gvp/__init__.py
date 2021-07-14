@@ -329,7 +329,7 @@ class GVPConvLayer(nn.Module):
         :param edge_index: array of shape [2, n_edges]
         :param edge_attr: tuple (s, V) of `torch.Tensor`
         :param autoregressive_x: tuple (s, V) of `torch.Tensor`. 
-                If not `None`, will be used as srcqq node embeddings
+                If not `None`, will be used as src node embeddings
                 for forming messages where src >= dst. The corrent node 
                 embeddings `x` will still be the base of the update and the 
                 pointwise feedforward.
