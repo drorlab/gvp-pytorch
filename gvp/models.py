@@ -36,7 +36,7 @@ class CPDModel(torch.nn.Module):
     '''
 
     def __init__(self, node_in_dim, node_h_dim,
-                 edge_in_dim, edge_h_dim,
+                 edge_in_dim, edge_h_dim, vector_dim=3,
                  num_layers=3, drop_rate=0.1):
 
         super(CPDModel, self).__init__()
@@ -51,14 +51,14 @@ class CPDModel(torch.nn.Module):
         )
 
         self.encoder_layers = nn.ModuleList(
-            GVPConvLayer(node_h_dim, edge_h_dim, drop_rate=drop_rate)
+            GVPConvLayer(node_h_dim, edge_h_dim, vector_dim=vector_dim, drop_rate=drop_rate)
             for _ in range(num_layers))
 
         self.W_s = nn.Embedding(20, 20)
         edge_h_dim = (edge_h_dim[0] + 20, edge_h_dim[1])
 
         self.decoder_layers = nn.ModuleList(
-            GVPConvLayer(node_h_dim, edge_h_dim,
+            GVPConvLayer(node_h_dim, edge_h_dim,  vector_dim=vector_dim,
                          drop_rate=drop_rate, autoregressive=True)
             for _ in range(num_layers))
 
@@ -190,7 +190,7 @@ class MQAModel(nn.Module):
     '''
 
     def __init__(self, node_in_dim, node_h_dim,
-                 edge_in_dim, edge_h_dim,
+                 edge_in_dim, edge_h_dim, vector_dim=3,
                  seq_in=False, num_layers=3, drop_rate=0.1):
 
         super(MQAModel, self).__init__()
@@ -209,7 +209,7 @@ class MQAModel(nn.Module):
         )
 
         self.layers = nn.ModuleList(
-            GVPConvLayer(node_h_dim, edge_h_dim, drop_rate=drop_rate)
+            GVPConvLayer(node_h_dim, edge_h_dim,  vector_dim=vector_dim, drop_rate=drop_rate)
             for _ in range(num_layers))
 
         ns, _ = node_h_dim
